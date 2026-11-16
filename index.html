@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>สัญญารักษาความลับ | QOOKID Creation</title>
+<title>สัญญาจ้างงาน | QOOKID Creation</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
-    <div class="brand">QOOKID Creation<small>สัญญารักษาความลับสำหรับทีมงาน</small></div>
+    <div class="brand">QOOKID Creation<small>สัญญาจ้างงานสำหรับทีมงาน</small></div>
   </div>
   <div id="demoBanner" class="demo" hidden>โหมดทดลอง: ยังไม่ได้เชื่อม Firebase ข้อมูลจะเก็บไว้ในเครื่องนี้เท่านั้น</div>
 
@@ -68,6 +68,27 @@
           <input id="email" name="email" type="email" autocomplete="email">
           <div class="msg"></div>
         </div>
+        <div class="field">
+          <label for="bankName">ธนาคารสำหรับรับค่าตอบแทน</label>
+          <select id="bankName" name="bankName">
+            <option value="">เลือก</option>
+            <option>กสิกรไทย</option><option>ไทยพาณิชย์</option><option>กรุงเทพ</option><option>กรุงไทย</option>
+            <option>กรุงศรีอยุธยา</option><option>ทหารไทยธนชาต (ttb)</option><option>ออมสิน</option><option>ธ.ก.ส.</option>
+            <option>ยูโอบี</option><option>ซีไอเอ็มบี ไทย</option><option>เกียรตินาคินภัทร</option><option>แลนด์ แอนด์ เฮ้าส์</option>
+            <option>ธนาคารอาคารสงเคราะห์</option><option>อื่น ๆ</option>
+          </select>
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="bankAcc">เลขที่บัญชี</label>
+          <input id="bankAcc" name="bankAcc" inputmode="numeric" maxlength="18" placeholder="ตัวเลขเท่านั้น">
+          <div class="msg"></div>
+        </div>
+        <div class="field full">
+          <label for="bankAccName">ชื่อบัญชี</label>
+          <input id="bankAccName" name="bankAccName" placeholder="ต้องเป็นชื่อเดียวกับผู้ลงนาม">
+          <div class="msg"></div>
+        </div>
       </div>
     </section>
 
@@ -98,8 +119,8 @@
 
     <section class="card">
       <h2 class="step"><b>4</b>ยืนยันและลงนาม</h2>
-      <label class="check"><input type="checkbox" id="agree1"> ข้าพเจ้าได้อ่านและเข้าใจข้อความในหนังสือสัญญารักษาความลับฉบับนี้ครบทุกข้อแล้ว และตกลงปฏิบัติตาม</label>
-      <label class="check"><input type="checkbox" id="agree2"> ข้าพเจ้ายินยอมให้บริษัทเก็บข้อมูลส่วนบุคคล ลายมือชื่อ และเอกสารแนบตามข้อ 10 และยอมรับการลงนามทางอิเล็กทรอนิกส์ตามข้อ 11</label>
+      <label class="check"><input type="checkbox" id="agree1"> ข้าพเจ้าได้อ่านและเข้าใจข้อความในสัญญาจ้างงานฉบับนี้ครบทุกข้อแล้ว รวมถึงแนวปฏิบัติในการทำงานและการรักษาความลับ และตกลงปฏิบัติตาม</label>
+      <label class="check"><input type="checkbox" id="agree2"> ข้าพเจ้ายินยอมให้บริษัทเก็บข้อมูลส่วนบุคคล ลายมือชื่อ และเอกสารแนบตามข้อ 16 และยอมรับการลงนามทางอิเล็กทรอนิกส์ตามข้อ 17</label>
 
       <label style="margin-top:12px">ลายมือชื่อ</label>
       <div class="sigpad" id="sigpad"><canvas id="sig"></canvas><div class="ph">เซ็นชื่อในกรอบนี้</div></div>
@@ -156,7 +177,8 @@
     return {
       prefix: $("prefix").value, fullName: val("fullName"), nickname: val("nickname"),
       idCard: val("idCard").replace(/\D/g, ""), address: val("address"), staffType: $("staffType").value,
-      role: val("role"), project: val("project"), phone: val("phone"), email: val("email")
+      role: val("role"), project: val("project"), phone: val("phone"), email: val("email"),
+      bankName: $("bankName").value, bankAcc: val("bankAcc").replace(/\D/g, ""), bankAccName: val("bankAccName")
     };
   }
   function refreshPreview() { $("preview").innerHTML = NDA.render(collect()); }
@@ -181,6 +203,8 @@
     const cut = d.startsWith("02") ? [2, 5] : [3, 6];
     return [d.slice(0, cut[0]), d.slice(cut[0], cut[1]), d.slice(cut[1])].filter(Boolean).join("-");
   }
+  $("bankAcc").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 15); });
+  $("fullName").addEventListener("change", () => { if (!$("bankAccName").value) $("bankAccName").value = [$("prefix").value, val("fullName")].filter(Boolean).join(" "); });
   $("phone").addEventListener("input", (e) => { e.target.value = formatPhone(e.target.value); });
 
   /* ---------- เอกสารแนบ ---------- */
@@ -332,6 +356,9 @@
       address: r.address.length >= 8 ? "" : "กรอกที่อยู่",
       staffType: r.staffType ? "" : "เลือกประเภทการทำงาน",
       role: r.role ? "" : "กรอกตำแหน่งหรือหน้าที่",
+      bankName: r.bankName ? "" : "เลือกธนาคาร",
+      bankAcc: r.bankAcc.length >= 10 && r.bankAcc.length <= 15 ? "" : "เลขบัญชีต้องมี 10–15 หลัก",
+      bankAccName: r.bankAccName.length >= 4 ? "" : "กรอกชื่อบัญชี",
       phone: (() => { const d = r.phone.replace(/\D/g, ""); return d.length === phoneLen(d) ? "" : "กรอกเบอร์โทรให้ครบ " + phoneLen(d) + " หลัก"; })(),
       email: !r.email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email) ? "" : "รูปแบบอีเมลไม่ถูกต้อง"
     };

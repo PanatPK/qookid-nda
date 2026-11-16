@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ใบงาน | QOOKID Creation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap" style="max-width:640px">
+  <div class="topbar">
+    <div class="brand">QOOKID Creation<small>ใบงานและค่าตอบแทน</small></div>
+  </div>
+  <div id="demoBanner" class="demo" hidden>โหมดทดลอง</div>
+  <div id="out"><section class="card"><div class="hint" style="margin:0">กำลังโหลด...</div></section></div>
+</div>
+
+<script src="contract.js"></script>
+<script src="store.js"></script>
+<script src="config.js" onerror="void 0"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id), esc = NDA.esc;
+  let db = null;
+  if (window.FIREBASE_CONFIG && window.firebase) {
+    try { firebase.initializeApp(window.FIREBASE_CONFIG); db = firebase.firestore(); } catch (e) { console.error(e); }
+  }
+  if (!db) $("demoBanner").hidden = false;
+  const S = makeStore(db);
+  const t = new URLSearchParams(location.search).get("t");
+  const fail = (m) => ($("out").innerHTML = `<section class="card"><p style="margin:0">${m}</p></section>`);
+  if (!t) return fail("ลิงก์ไม่ถูกต้อง กรุณาใช้ลิงก์ที่ได้รับจากบริษัท");
+
+  let a;
+  try { a = await S.get("assignments", t); } catch (e) { console.error(e); return fail("โหลดใบงานไม่ได้ ลองใหม่อีกครั้ง"); }
+  if (!a) return fail("ไม่พบใบงานนี้ ลิงก์อาจถูกยกเลิกแล้ว กรุณาติดต่อบริษัท");
+
+  function render() {
+    const c = Pay.calc(a), two = c.inst.length === 2;
+    $("out").innerHTML = `
+    <section class="card sheet">
+      <h2 style="margin:0 0 2px">${esc(a.jobName)}</h2>
+      <div class="hint" style="margin:0 0 16px">${esc(Pay.range(a.jobStart, a.jobEnd))}${a.location ? " &nbsp; " + esc(a.location) : ""}</div>
+      <dl>
+        <dt>ชื่อ</dt><dd>${esc(a.name)} (${esc(a.nickname)})</dd>
+        <dt>ตำแหน่ง</dt><dd>${esc(a.role)}</dd>
+        <dt>วันที่ทำงาน</dt><dd>${esc(Pay.range(a.start, a.end))} รวม ${c.days} วัน</dd>
+        <dt>อ้างอิงสัญญา</dt><dd>${esc(a.docNo)}</dd>
+      </dl>
+      <table class="money">
+        <tr><td>ค่าตอบแทน ${c.days} วัน × ${Pay.money(a.rate)} บาท</td><td>${Pay.money(c.base)}</td></tr>
+        ${(a.extras || []).map((x) => `<tr><td>${esc(x.label)}</td><td>${Pay.money(x.amount)}</td></tr>`).join("")}
+        ${c.wht ? `<tr><td>หักภาษี ณ ที่จ่าย ${esc(a.whtRate)}%</td><td>-${Pay.money(c.wht)}</td></tr>` : ""}
+        <tr class="total"><td>ยอดรับสุทธิ</td><td>${Pay.money(c.net)} บาท</td></tr>
+      </table>
+      <p class="hint" style="margin:12px 0 0">${two
+        ? `แบ่งโอน 2 งวด งวดละ ${Pay.money(c.inst[0])} และ ${Pay.money(c.inst[1])} บาท ตามกำหนดที่บริษัทแจ้ง โดยงวดสุดท้ายโอนภายใน ${esc(NDA_SETTINGS.payDays)} วันนับจากวันที่จบงาน`
+        : `โอนครั้งเดียวภายใน ${esc(NDA_SETTINGS.payDays)} วันนับจากวันที่จบงาน`} เข้าบัญชีที่แจ้งไว้ตอนเซ็นสัญญา
+        ยอดจริงคิดตามวันที่มาทำงานจริง</p>
+      ${c.inst.map((v, i) => a.paid && a.paid[i]
+        ? `<div class="tag ok" style="margin-top:8px">${two ? "งวด " + (i + 1) + " " : ""}โอนแล้ว ${Pay.money(v)} บาท</div> ` : "").join("")}
+    </section>
+    <section class="card">
+      ${a.ackAt
+        ? `<div class="done-head"><div class="tick">✓</div><h2>รับทราบใบงานแล้ว</h2>
+           <div class="hint" style="margin:0">เมื่อ ${esc(NDA.thaiDateTime(a.ackAt))}</div></div>`
+        : `<p style="margin:0 0 12px">ตรวจตำแหน่ง วันที่ และค่าตอบแทนให้ถูกต้อง ถ้าไม่ตรงให้ติดต่อบริษัทก่อนกดรับทราบ</p>
+           <button class="btn primary block" id="ack">รับทราบและยืนยันใบงาน</button><div class="err-box" id="err"></div>`}
+    </section>`;
+    if ($("ack")) $("ack").onclick = async () => {
+      $("ack").disabled = true;
+      const patch = { ackAt: new Date().toISOString(), ackUA: navigator.userAgent.slice(0, 300) };
+      try { await S.update("assignments", t, patch); Object.assign(a, patch); render(); }
+      catch (e) { console.error(e); $("err").textContent = "ยืนยันไม่สำเร็จ ลองใหม่อีกครั้ง"; $("ack").disabled = false; }
+    };
+  }
+  render();
+})();
+</script>
+</body>
+</html>

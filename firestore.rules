@@ -31,6 +31,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // งาน: แอดมินเท่านั้น
+    match /jobs/{jobId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ใบงานรายคน: id เป็นรหัสสุ่ม 24 ตัว ใครมีลิงก์เปิดดูใบงานของตัวเองได้ แต่ค้นรายการทั้งหมดไม่ได้
+    // สตาฟแก้ได้อย่างเดียวคือกดรับทราบ (ackAt, ackUA) และกดได้ครั้งเดียว
+    match /assignments/{token} {
+      allow get: if true;
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (resource.data.ackAt == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ackAt', 'ackUA'])
+            && request.resource.data.ackAt is string);
+    }
+
     // คอลเลกชันของระบบอื่นในโปรเจกต์เดียวกันให้คงกฎเดิมไว้ด้านล่างนี้
   }
 }

@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>แอดมิน · สัญญารักษาความลับ</title>
+<title>แอดมิน สัญญาจ้างงาน</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap" style="max-width:1080px">
   <div class="topbar">
-    <div class="brand">QOOKID Creation<small>รายชื่อผู้ลงนามสัญญารักษาความลับ</small></div>
+    <div class="brand">QOOKID Creation<small>หลังบ้านสัญญาจ้างงานและการจ่ายเงิน</small></div>
     <button class="btn ghost small" id="logoutBtn" hidden>ออกจากระบบ</button>
   </div>
   <div id="demoBanner" class="demo" hidden>โหมดทดลอง: แสดงข้อมูลที่เซ็นในเครื่องนี้เท่านั้น</div>
@@ -28,6 +28,11 @@
 
   <!-- แดชบอร์ด -->
   <div id="app" hidden>
+    <div class="tabs no-print">
+      <button class="tab on" data-tab="staffTab">รายชื่อผู้ลงนาม</button>
+      <button class="tab" data-tab="jobsTab">ใบงานและการจ่ายเงิน</button>
+    </div>
+    <div id="staffTab">
     <section class="card">
       <h2 class="step" style="font-size:16px;margin-bottom:8px">ลิงก์สำหรับส่งให้สตาฟ</h2>
       <p class="hint" style="margin:0 0 10px">ใส่ชื่องานแล้วคัดลอกลิงก์ส่งในกลุ่มไลน์ ช่องงาน/โครงการจะถูกกรอกให้อัตโนมัติ</p>
@@ -53,6 +58,8 @@
         </table>
       </div>
     </section>
+    </div>
+    <div id="jobsTab" hidden></div>
   </div>
 </div>
 
@@ -69,10 +76,12 @@
 </div>
 
 <script src="contract.js"></script>
+<script src="store.js"></script>
 <script src="config.js" onerror="void 0"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="jobs.js"></script>
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -165,7 +174,7 @@
       console.error(e); box.innerHTML = '<div class="hint">โหลดเอกสารแนบไม่ได้ ตรวจสอบ Firestore Rules ของ nda_files</div>';
     }
   }
-  $("closeBtn").onclick = () => { $("viewer").classList.remove("open"); document.title = "แอดมิน · สัญญารักษาความลับ"; };
+  $("closeBtn").onclick = () => { $("viewer").classList.remove("open"); document.title = "แอดมิน สัญญาจ้างงาน"; };
   $("printBtn").onclick = () => { document.body.classList.add("printing-doc"); window.print(); };
   window.addEventListener("afterprint", () => document.body.classList.remove("printing-doc"));
 
@@ -173,19 +182,28 @@
   $("csvBtn").onclick = () => {
     const cols = [["docNo", "เลขที่"], ["signedAt", "วันเวลาลงนาม"], ["prefix", "คำนำหน้า"], ["fullName", "ชื่อ-นามสกุล"], ["nickname", "ชื่อเล่น"],
       ["idCard", "เลขบัตรประชาชน"], ["address", "ที่อยู่"], ["staffType", "ประเภท"], ["role", "ตำแหน่ง"], ["project", "งาน"],
-      ["phone", "โทร"], ["email", "อีเมล"], ["version", "ฉบับสัญญา"]];
+      ["phone", "โทร"], ["email", "อีเมล"], ["bankName", "ธนาคาร"], ["bankAcc", "เลขบัญชี"], ["bankAccName", "ชื่อบัญชี"], ["version", "ฉบับสัญญา"]];
     const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = [cols.map((c) => q(c[1])).join(",")].concat(
-      filtered().map((r) => cols.map(([k]) => q(k === "signedAt" ? NDA.thaiDateTime(r[k]) : k === "idCard" ? "'" + (r[k] || "") : r[k])).join(",")));
+      filtered().map((r) => cols.map(([k]) => q(k === "signedAt" ? NDA.thaiDateTime(r[k]) : (k === "idCard" || k === "bankAcc") ? "'" + (r[k] || "") : r[k])).join(",")));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
     a.download = `NDA_signatures_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
+  /* ---------- แท็บ ---------- */
+  document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+    $("staffTab").hidden = t.dataset.tab !== "staffTab"; $("jobsTab").hidden = t.dataset.tab !== "jobsTab";
+    if (t.dataset.tab === "jobsTab") window.Jobs.open();
+  });
+  const startJobs = () => window.Jobs.init({ store: makeStore(db), staff: () => all, mount: $("jobsTab") });
+
   /* ---------- Firebase / โหมดทดลอง ---------- */
   if (!(window.FIREBASE_CONFIG && window.firebase)) {
     $("demoBanner").hidden = false; $("app").hidden = false;
     setData(JSON.parse(localStorage.getItem("nda_demo") || "[]"));
+    startJobs();
     return;
   }
   firebase.initializeApp(window.FIREBASE_CONFIG);
@@ -202,6 +220,7 @@
     if (unsub) { unsub(); unsub = null; }
     $("loginCard").hidden = !!user; $("app").hidden = !user; $("logoutBtn").hidden = !user;
     if (!user) return;
+    startJobs();
     unsub = db.collection(COLLECTION).onSnapshot(
       (snap) => setData(snap.docs.map((d) => d.data())),
       (err) => { console.error(err); $("stats").textContent = "บัญชีนี้ไม่มีสิทธิ์ดูข้อมูล ตรวจสอบ Firestore Rules"; }
