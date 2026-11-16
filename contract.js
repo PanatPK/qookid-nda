@@ -44,9 +44,8 @@ window.NDA = (function () {
     <h1>หนังสือสัญญารักษาความลับ</h1>
     <div class="c-sub">Non-Disclosure Agreement</div>
     <div class="c-meta">
-      <div>เลขที่ ${blank(r.docNo, 8)}</div>
+      <div>เลขที่ ${blank(r.docNo, 8)} &nbsp; วันที่ ${blank(r.signedAt ? thaiDate(r.signedAt) : "", 8)}</div>
       <div>ทำที่ ${esc(S.companyTh)} ${esc(S.address)}</div>
-      <div>วันที่ ${blank(r.signedAt ? thaiDate(r.signedAt) : "", 8)}</div>
     </div>
   </header>
 
