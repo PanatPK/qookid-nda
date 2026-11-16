@@ -123,6 +123,7 @@
       </div>
     </section>
     <div class="paper" id="finalDoc"></div>
+    <div class="paper" id="finalAtt" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -395,6 +396,8 @@
       $("form").hidden = true; $("done").hidden = false;
       $("doneNo").textContent = record.docNo;
       $("finalDoc").innerHTML = record.contractHtml;
+      $("finalAtt").innerHTML = files.map((f) => `
+        <section class="att-page"><h3>${NDA.esc(f.label)}</h3><img src="${f.data}" alt="${NDA.esc(f.label)}"></section>`).join("");
       document.title = record.docNo + " " + record.fullName;
       window.scrollTo(0, 0);
     } catch (ex) {
