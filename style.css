@@ -64,6 +64,21 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
 
+.uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { .uploads { grid-template-columns: 1fr; } }
+.drop {
+  display: grid; place-items: center; aspect-ratio: 16 / 10; border: 1.5px dashed #b9bdc6; border-radius: 12px;
+  background: #fafafa; cursor: pointer; overflow: hidden; color: var(--muted); font-weight: 400; font-size: 14px; margin: 0;
+}
+.drop img { display: none; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.drop.has img { display: block; }
+.drop.has span { display: none; }
+.field.bad .drop { border-color: var(--err); }
+
+.att-page { margin-top: 16px; }
+.att-page h3 { font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.att-page img { display: block; max-width: 100%; border: 1px solid var(--line); }
+
 .err-box { color: var(--err); font-size: 14px; margin-top: 10px; }
 .done-head { text-align: center; padding: 8px 0 4px; }
 .done-head .tick { width: 56px; height: 56px; border-radius: 50%; background: #e3f4ea; color: var(--ok); display: inline-grid; place-items: center; font-size: 28px; }
@@ -132,4 +147,7 @@ tr:hover td { background: #fafafa; }
   .contract .sig-box img { max-height: 80px; }
   .contract .c-foot { margin-top: 36px; padding-top: 8px; font-size: 11.5px; }
   body.printing-doc > *:not(.overlay) { display: none !important; }
+  .att-page { break-before: page; margin: 0; }
+  .att-page h3 { font-family: "Sarabun", serif; }
+  .att-page img { max-height: 250mm; margin: 0 auto; border: 0; }
 }

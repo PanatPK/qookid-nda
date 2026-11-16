@@ -21,6 +21,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // สำเนาบัตรประชาชนและหน้าบัญชี (รูป JPEG เก็บเป็นข้อความ) ส่งได้อย่างเดียว อ่านได้เฉพาะแอดมิน
+    match /nda_files/{fileId} {
+      allow create: if request.resource.data.kind in ['idcard', 'bank']
+        && fileId == request.resource.data.docNo + '_' + request.resource.data.kind
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 900000;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // คอลเลกชันของระบบอื่นในโปรเจกต์เดียวกันให้คงกฎเดิมไว้ด้านล่างนี้
   }
 }

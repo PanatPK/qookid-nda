@@ -64,6 +64,7 @@
       <button class="btn ghost small" id="closeBtn">ปิด</button>
     </div>
     <div class="paper" id="docView"></div>
+    <div class="paper" id="attView" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -77,7 +78,8 @@
   const $ = (id) => document.getElementById(id);
   const esc = NDA.esc;
   const COLLECTION = "nda_signatures";
-  let all = [], unsub = null;
+  const FILES = "nda_files";
+  let all = [], unsub = null, db = null;
 
   /* ---------- ลิงก์สำหรับสตาฟ ---------- */
   const base = location.href.replace(/admin\.html.*$/, "index.html").split("?")[0];
@@ -141,7 +143,28 @@
     $("docView").innerHTML = r.contractHtml || NDA.render(r);
     $("viewer").classList.add("open"); $("viewer").scrollTop = 0;
     document.title = `${r.docNo} ${r.fullName}`;
+    showFiles(r);
   });
+
+  async function showFiles(r) {
+    const box = $("attView");
+    box.dataset.for = r.docNo; box.innerHTML = '<div class="hint">กำลังโหลดเอกสารแนบ...</div>';
+    try {
+      let files;
+      if (db) files = (await db.collection(FILES).where("docNo", "==", r.docNo).get()).docs.map((d) => d.data());
+      else files = (JSON.parse(localStorage.getItem("nda_demo_files") || "{}"))[r.docNo] || [];
+      if (box.dataset.for && box.dataset.for !== r.docNo) return;
+      const order = { idcard: 0, bank: 1 };
+      files.sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9));
+      box.innerHTML = files.length ? files.map((f) => `
+        <section class="att-page">
+          <h3>${esc(f.label || f.kind)} <a class="btn ghost small no-print" download="${esc(r.docNo)}_${esc(f.kind)}.jpg" href="${f.data}">ดาวน์โหลด</a></h3>
+          <img src="${f.data}" alt="${esc(f.label || f.kind)}">
+        </section>`).join("") : '<div class="hint">ไม่มีเอกสารแนบ</div>';
+    } catch (e) {
+      console.error(e); box.innerHTML = '<div class="hint">โหลดเอกสารแนบไม่ได้ ตรวจสอบ Firestore Rules ของ nda_files</div>';
+    }
+  }
   $("closeBtn").onclick = () => { $("viewer").classList.remove("open"); document.title = "แอดมิน · สัญญารักษาความลับ"; };
   $("printBtn").onclick = () => { document.body.classList.add("printing-doc"); window.print(); };
   window.addEventListener("afterprint", () => document.body.classList.remove("printing-doc"));
@@ -166,7 +189,7 @@
     return;
   }
   firebase.initializeApp(window.FIREBASE_CONFIG);
-  const auth = firebase.auth(), db = firebase.firestore();
+  const auth = firebase.auth(); db = firebase.firestore();
 
   $("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault(); $("loginErr").textContent = "";

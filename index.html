@@ -78,9 +78,28 @@
     </section>
 
     <section class="card">
-      <h2 class="step"><b>3</b>ยืนยันและลงนาม</h2>
+      <h2 class="step"><b>3</b>แนบเอกสาร</h2>
+      <p class="hint">ถ่ายรูป หรือเลือกรูปหรือไฟล์ PDF จากเครื่อง ระบบจะประทับ "สำเนาถูกต้อง" พร้อมลายเซ็นของคุณ และใส่ลายน้ำว่าใช้กับ QOOKID Creation เท่านั้นให้อัตโนมัติ</p>
+      <div class="uploads">
+        <div class="field">
+          <label>สำเนาบัตรประชาชน</label>
+          <label class="drop" for="f_idcard"><img alt=""><span>แตะเพื่อถ่ายรูป หรือเลือกรูป/PDF</span></label>
+          <input type="file" id="f_idcard" data-kind="idcard" accept="image/*,application/pdf,.pdf" hidden>
+          <div class="msg" id="m_idcard"></div>
+        </div>
+        <div class="field">
+          <label>หน้าสมุดบัญชีธนาคาร <span class="opt">(หน้าที่มีชื่อและเลขบัญชี)</span></label>
+          <label class="drop" for="f_bank"><img alt=""><span>แตะเพื่อถ่ายรูป หรือเลือกรูป/PDF</span></label>
+          <input type="file" id="f_bank" data-kind="bank" accept="image/*,application/pdf,.pdf" hidden>
+          <div class="msg" id="m_bank"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="step"><b>4</b>ยืนยันและลงนาม</h2>
       <label class="check"><input type="checkbox" id="agree1"> ข้าพเจ้าได้อ่านและเข้าใจข้อความในหนังสือสัญญารักษาความลับฉบับนี้ครบทุกข้อแล้ว และตกลงปฏิบัติตาม</label>
-      <label class="check"><input type="checkbox" id="agree2"> ข้าพเจ้ายินยอมให้บริษัทเก็บข้อมูลส่วนบุคคลและลายมือชื่อตามข้อ 10 และยอมรับการลงนามทางอิเล็กทรอนิกส์ตามข้อ 11</label>
+      <label class="check"><input type="checkbox" id="agree2"> ข้าพเจ้ายินยอมให้บริษัทเก็บข้อมูลส่วนบุคคล ลายมือชื่อ และเอกสารแนบตามข้อ 10 และยอมรับการลงนามทางอิเล็กทรอนิกส์ตามข้อ 11</label>
 
       <label style="margin-top:12px">ลายมือชื่อ</label>
       <div class="sigpad" id="sigpad"><canvas id="sig"></canvas><div class="ph">เซ็นชื่อในกรอบนี้</div></div>
@@ -116,6 +135,7 @@
   const S = window.NDA_SETTINGS;
   const $ = (id) => document.getElementById(id);
   const COLLECTION = "nda_signatures";
+  const FILES = "nda_files";
 
   /* ---------- Firebase ---------- */
   let db = null;
@@ -161,6 +181,99 @@
     return [d.slice(0, cut[0]), d.slice(cut[0], cut[1]), d.slice(cut[1])].filter(Boolean).join("-");
   }
   $("phone").addEventListener("input", (e) => { e.target.value = formatPhone(e.target.value); });
+
+  /* ---------- เอกสารแนบ ---------- */
+  const FILE_LABEL = { idcard: "สำเนาบัตรประชาชน", bank: "หน้าสมุดบัญชีธนาคาร" };
+  const attach = { idcard: null, bank: null };   // dataURL JPEG ที่ย่อแล้ว
+  const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  function drawJpeg(img, maxSide, q) {
+    const s = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round((img.naturalWidth || img.width) * s); c.height = Math.round((img.naturalHeight || img.height) * s);
+    const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+    return { canvas: c, url: c.toDataURL("image/jpeg", q) };
+  }
+  // แปลง PDF หน้าแรกเป็นรูป ด้วย pdf.js (โหลดเฉพาะตอนมีคนแนบ PDF)
+  const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/";
+  let pdfjsLib = null;
+  async function pdfFirstPage(file) {
+    if (!pdfjsLib) {
+      pdfjsLib = await import(PDFJS + "pdf.min.mjs");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.mjs";
+    }
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const page = await pdf.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: 1600 / Math.max(base.width, base.height) });
+    const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: x, viewport: vp }).promise;
+    pdf.destroy();
+    return c.toDataURL("image/jpeg", 0.85);
+  }
+
+  document.querySelectorAll('input[type=file][data-kind]').forEach((inp) => {
+    inp.addEventListener("change", async () => {
+      const kind = inp.dataset.kind, f = inp.files[0], drop = inp.previousElementSibling, msg = $("m_" + kind);
+      if (!f) return;
+      msg.textContent = ""; inp.closest(".field").classList.remove("bad");
+      const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      if (!isPdf && !f.type.startsWith("image/")) { msg.textContent = "รองรับไฟล์รูปหรือ PDF เท่านั้น"; inp.value = ""; return; }
+      const url = URL.createObjectURL(f);
+      try {
+        if (isPdf) {
+          msg.textContent = "กำลังเปิดไฟล์ PDF...";
+          attach[kind] = await pdfFirstPage(f);
+          msg.textContent = "";
+        } else {
+          attach[kind] = drawJpeg(await loadImg(url), 1600, 0.85).url;
+        }
+        drop.querySelector("img").src = attach[kind]; drop.classList.add("has");
+      } catch (e) {
+        console.error(e);
+        msg.textContent = e && e.name === "PasswordException"
+          ? "PDF นี้ตั้งรหัสผ่านไว้ กรุณาแคปหน้าจอแล้วแนบเป็นรูปแทน"
+          : "เปิดไฟล์นี้ไม่ได้ ลองถ่ายรูปใหม่หรือแคปหน้าจอแล้วแนบ";
+      }
+      finally { URL.revokeObjectURL(url); inp.value = ""; }
+    });
+  });
+
+  // ประทับลายน้ำ + "สำเนาถูกต้อง" + ลายเซ็น แล้วบีบไฟล์ให้ไม่เกิน ~650KB
+  async function stampCopy(src, sigUrl, docNo, dateText) {
+    try { await document.fonts.load('600 20px "IBM Plex Sans Thai"'); } catch {}
+    const img = await loadImg(src), sig = await loadImg(sigUrl);
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+    const x = c.getContext("2d"), w = c.width, h = c.height, font = '"IBM Plex Sans Thai", sans-serif';
+    x.drawImage(img, 0, 0);
+
+    // ลายน้ำแนวทแยง
+    x.save(); x.translate(w / 2, h / 2); x.rotate(-Math.PI / 7);
+    const fs = Math.max(16, Math.round(Math.max(w, h) / 30));
+    x.font = `600 ${fs}px ${font}`; x.fillStyle = "rgba(190,20,40,.26)"; x.textAlign = "center"; x.textBaseline = "middle";
+    const text = `ใช้สำหรับ ${S.companyEn} เท่านั้น`, step = x.measureText(text).width + fs * 2, span = Math.hypot(w, h);
+    for (let yy = -span / 2, row = 0; yy < span / 2; yy += fs * 4, row++)
+      for (let xx = -span / 2 + (row % 2) * step / 2; xx < span / 2; xx += step) x.fillText(text, xx, yy);
+    x.restore();
+
+    // กล่องรับรองสำเนา มุมขวาล่าง
+    const bw = Math.round(Math.min(w * 0.42, 520)), bh = Math.round(bw * 0.5), m = Math.round(bw * 0.05);
+    const bx = w - bw - m, by = h - bh - m;
+    x.fillStyle = "rgba(255,255,255,.88)"; x.strokeStyle = "#0b1f4a"; x.lineWidth = Math.max(1.5, bw / 220);
+    x.fillRect(bx, by, bw, bh); x.strokeRect(bx, by, bw, bh);
+    x.fillStyle = "#0b1f4a"; x.textAlign = "center"; x.textBaseline = "top";
+    x.font = `700 ${Math.round(bh * 0.17)}px ${font}`; x.fillText("สำเนาถูกต้อง", bx + bw / 2, by + bh * 0.06);
+    const sh = bh * 0.42, sw = Math.min(bw * 0.8, sh * sig.width / sig.height);
+    x.drawImage(sig, bx + (bw - sw) / 2, by + bh * 0.28, sw, sw * sig.height / sig.width);
+    x.font = `400 ${Math.round(bh * 0.1)}px ${font}`;
+    x.fillText(`${dateText}  ${docNo}`, bx + bw / 2, by + bh * 0.82);
+
+    // บีบขนาด
+    let q = 0.82, out = c.toDataURL("image/jpeg", q);
+    while (out.length > 650000 && q > 0.45) { q -= 0.08; out = c.toDataURL("image/jpeg", q); }
+    if (out.length > 650000) out = drawJpeg(await loadImg(out), 1100, 0.7).url;
+    return out;
+  }
 
   /* ---------- ลายเซ็น ---------- */
   const canvas = $("sig"), pad = $("sigpad"), ctx = canvas.getContext("2d");
@@ -224,6 +337,9 @@
     Object.entries(errs).forEach(([k, m]) => setErr(k, m));
     const first = Object.keys(errs).find((k) => errs[k]);
     if (first) { $(first).scrollIntoView({ behavior: "smooth", block: "center" }); return "กรอกข้อมูลในขั้นที่ 1 ให้ครบ"; }
+    const missing = Object.keys(attach).filter((k) => !attach[k]);
+    missing.forEach((k) => { $("m_" + k).textContent = "กรุณาแนบ" + FILE_LABEL[k]; $("f_" + k).closest(".field").classList.add("bad"); });
+    if (missing.length) { $("f_" + missing[0]).closest(".field").scrollIntoView({ behavior: "smooth", block: "center" }); return "กรุณาแนบเอกสารในขั้นที่ 3 ให้ครบ"; }
     if (!$("agree1").checked || !$("agree2").checked) return "กรุณาติ๊กยืนยันทั้งสองข้อ";
     if (!hasInk) return "กรุณาเซ็นชื่อในกรอบ";
     return "";
@@ -250,18 +366,31 @@
     sending = true; $("submitBtn").disabled = true; $("submitBtn").textContent = "กำลังส่ง...";
     const record = Object.assign(r, {
       docNo: newDocNo(), signature, signedAt: new Date().toISOString(),
-      version: S.version, userAgent: navigator.userAgent.slice(0, 300)
+      version: S.version, userAgent: navigator.userAgent.slice(0, 300), attachments: Object.keys(attach)
     });
     record.contractHtml = NDA.render(record); // เก็บข้อความสัญญาฉบับที่เซ็นจริงไว้ด้วย
 
     try {
+      const dateText = NDA.thaiDate(record.signedAt);
+      const files = [];
+      for (const kind of Object.keys(attach)) {
+        files.push({ docNo: record.docNo, kind, label: FILE_LABEL[kind], mime: "image/jpeg",
+          data: await stampCopy(attach[kind], signature, record.docNo, dateText), createdAt: record.signedAt });
+      }
       if (db) {
-        await db.collection(COLLECTION).doc(record.docNo).set(
-          Object.assign({}, record, { serverTime: firebase.firestore.FieldValue.serverTimestamp() })
-        );
+        // บันทึกสัญญาและไฟล์แนบพร้อมกัน ถ้าอันใดล้มเหลวจะไม่บันทึกเลย
+        const batch = db.batch();
+        batch.set(db.collection(COLLECTION).doc(record.docNo),
+          Object.assign({}, record, { serverTime: firebase.firestore.FieldValue.serverTimestamp() }));
+        files.forEach((f) => batch.set(db.collection(FILES).doc(`${f.docNo}_${f.kind}`), f));
+        await batch.commit();
       } else {
         const list = JSON.parse(localStorage.getItem("nda_demo") || "[]");
         list.push(record); localStorage.setItem("nda_demo", JSON.stringify(list));
+        try {
+          const fm = JSON.parse(localStorage.getItem("nda_demo_files") || "{}");
+          fm[record.docNo] = files; localStorage.setItem("nda_demo_files", JSON.stringify(fm));
+        } catch (q) { console.warn("demo: ไฟล์แนบใหญ่เกินที่เก็บในเบราว์เซอร์", q); }
       }
       $("form").hidden = true; $("done").hidden = false;
       $("doneNo").textContent = record.docNo;
