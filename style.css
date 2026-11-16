@@ -111,14 +111,21 @@ tr:hover td { background: #fafafa; }
 .linkbox input { flex: 1; font-size: 14px; }
 
 @media print {
-  @page { size: A4; margin: 16mm 18mm; }
+  @page { size: A4; margin: 12mm 16mm 12mm; }
   body { background: #fff; }
   .no-print, .topbar, .demo { display: none !important; }
   .wrap, .overlay .inner { max-width: none; padding: 0; margin: 0; }
   .overlay { position: static; background: none; padding: 0; display: block; }
   .paper { border: 0; box-shadow: none; padding: 0; }
-  .contract { font-size: 14.5px; line-height: 1.6; }
-  .contract h2 { break-after: avoid; }
-  .contract .c-sign { break-inside: avoid; }
+  .contract { font-size: 13.5px; line-height: 1.5; }
+  .contract h1 { font-size: 19px; margin-top: 4px; }
+  .contract .c-sub { margin-bottom: 6px; }
+  .contract .c-meta { font-size: 13.5px; margin-bottom: 10px; }
+  .contract h2 { font-size: 13.5px; margin: 8px 0 1px; break-after: avoid; }
+  .contract p, .contract ol.sub { margin-bottom: 2px; }
+  .contract .c-sign { margin-top: 14px; break-inside: avoid; }
+  .contract .sig-box { height: 64px; }
+  .contract .sig-box img { max-height: 72px; }
+  .contract .c-foot { margin-top: 12px; padding-top: 6px; font-size: 11px; }
   body.printing-doc > *:not(.overlay) { display: none !important; }
 }
