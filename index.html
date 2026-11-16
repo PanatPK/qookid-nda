@@ -60,7 +60,7 @@
         </div>
         <div class="field">
           <label for="phone">เบอร์โทรศัพท์</label>
-          <input id="phone" name="phone" inputmode="tel" autocomplete="tel">
+          <input id="phone" name="phone" inputmode="numeric" autocomplete="tel" maxlength="12" placeholder="08X-XXX-XXXX">
           <div class="msg"></div>
         </div>
         <div class="field">
@@ -150,6 +150,18 @@
     e.target.value = parts.join("-");
   });
 
+  // เบอร์โทร: มือถือ 0XX-XXX-XXXX (10 หลัก), เบอร์บ้านกรุงเทพฯ 02-XXX-XXXX (9 หลัก), ต่างจังหวัด 0XX-XXX-XXX (9 หลัก)
+  const isMobile = (d) => /^0[689]/.test(d);
+  const phoneLen = (d) => (isMobile(d) ? 10 : 9);
+  function formatPhone(raw) {
+    let d = raw.replace(/\D/g, "");
+    if (d && d[0] !== "0") d = "0" + d;
+    d = d.slice(0, phoneLen(d));
+    const cut = d.startsWith("02") ? [2, 5] : [3, 6];
+    return [d.slice(0, cut[0]), d.slice(cut[0], cut[1]), d.slice(cut[1])].filter(Boolean).join("-");
+  }
+  $("phone").addEventListener("input", (e) => { e.target.value = formatPhone(e.target.value); });
+
   /* ---------- ลายเซ็น ---------- */
   const canvas = $("sig"), pad = $("sigpad"), ctx = canvas.getContext("2d");
   let drawing = false, hasInk = false, last = null;
@@ -206,7 +218,7 @@
       address: r.address.length >= 8 ? "" : "กรอกที่อยู่",
       staffType: r.staffType ? "" : "เลือกประเภทการทำงาน",
       role: r.role ? "" : "กรอกตำแหน่งหรือหน้าที่",
-      phone: r.phone.replace(/\D/g, "").length >= 9 ? "" : "กรอกเบอร์โทรให้ครบ",
+      phone: (() => { const d = r.phone.replace(/\D/g, ""); return d.length === phoneLen(d) ? "" : "กรอกเบอร์โทรให้ครบ " + phoneLen(d) + " หลัก"; })(),
       email: !r.email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email) ? "" : "รูปแบบอีเมลไม่ถูกต้อง"
     };
     Object.entries(errs).forEach(([k, m]) => setErr(k, m));
