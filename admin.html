@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>แอดมิน · สัญญารักษาความลับ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap" style="max-width:1080px">
+  <div class="topbar">
+    <div class="brand">QOOKID Creation<small>รายชื่อผู้ลงนามสัญญารักษาความลับ</small></div>
+    <button class="btn ghost small" id="logoutBtn" hidden>ออกจากระบบ</button>
+  </div>
+  <div id="demoBanner" class="demo" hidden>โหมดทดลอง: แสดงข้อมูลที่เซ็นในเครื่องนี้เท่านั้น</div>
+
+  <!-- เข้าสู่ระบบ -->
+  <section class="card" id="loginCard" hidden style="max-width:420px;margin:40px auto">
+    <h2 class="step" style="margin-bottom:16px">เข้าสู่ระบบแอดมิน</h2>
+    <form id="loginForm">
+      <div class="field"><label for="em">อีเมล</label><input id="em" type="email" autocomplete="username"></div>
+      <div class="field" style="margin-top:10px"><label for="pw">รหัสผ่าน</label><input id="pw" type="password" autocomplete="current-password"></div>
+      <button class="btn primary block" style="margin-top:16px">เข้าสู่ระบบ</button>
+      <div class="err-box" id="loginErr"></div>
+    </form>
+  </section>
+
+  <!-- แดชบอร์ด -->
+  <div id="app" hidden>
+    <section class="card">
+      <h2 class="step" style="font-size:16px;margin-bottom:8px">ลิงก์สำหรับส่งให้สตาฟ</h2>
+      <p class="hint" style="margin:0 0 10px">ใส่ชื่องานแล้วคัดลอกลิงก์ส่งในกลุ่มไลน์ ช่องงาน/โครงการจะถูกกรอกให้อัตโนมัติ</p>
+      <div class="linkbox">
+        <input id="projIn" placeholder="ชื่องาน เช่น TEAPOT คาราวานคู่ชง (เว้นว่างได้)">
+        <button class="btn ghost small" id="copyLink">คัดลอกลิงก์</button>
+      </div>
+      <div class="hint" id="linkOut" style="margin:8px 0 0;word-break:break-all"></div>
+    </section>
+
+    <section class="card">
+      <div class="toolbar">
+        <input id="q" placeholder="ค้นหาชื่อ ชื่อเล่น เลขที่เอกสาร เบอร์โทร">
+        <select id="fProject"><option value="">ทุกงาน</option></select>
+        <select id="fType"><option value="">ทุกประเภท</option></select>
+        <button class="btn ghost small" id="csvBtn">ดาวน์โหลด CSV</button>
+      </div>
+      <div class="stats" id="stats">กำลังโหลด...</div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>วันที่ลงนาม</th><th>เลขที่</th><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>ประเภท</th><th>ตำแหน่ง</th><th>งาน</th><th>โทร</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ดูเอกสาร -->
+<div class="overlay" id="viewer">
+  <div class="inner">
+    <div class="bar no-print">
+      <button class="btn primary small" id="printBtn">บันทึกเป็น PDF / พิมพ์</button>
+      <button class="btn ghost small" id="closeBtn">ปิด</button>
+    </div>
+    <div class="paper" id="docView"></div>
+  </div>
+</div>
+
+<script src="contract.js"></script>
+<script src="config.js" onerror="void 0"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = NDA.esc;
+  const COLLECTION = "nda_signatures";
+  let all = [], unsub = null;
+
+  /* ---------- ลิงก์สำหรับสตาฟ ---------- */
+  const base = location.href.replace(/admin\.html.*$/, "index.html").split("?")[0];
+  function makeLink() {
+    const p = $("projIn").value.trim();
+    const url = p ? `${base}?project=${encodeURIComponent(p)}` : base;
+    $("linkOut").textContent = url; return url;
+  }
+  $("projIn").addEventListener("input", makeLink); makeLink();
+  $("copyLink").onclick = async () => {
+    try { await navigator.clipboard.writeText(makeLink()); $("copyLink").textContent = "คัดลอกแล้ว"; }
+    catch { $("copyLink").textContent = "คัดลอกเองจากด้านล่าง"; }
+    setTimeout(() => ($("copyLink").textContent = "คัดลอกลิงก์"), 1800);
+  };
+
+  /* ---------- ตาราง ---------- */
+  const maskId = (id) => (id && id.length === 13 ? `x-xxxx-xxxxx-${id.slice(10, 12)}-${id[12]}` : "");
+  const short = (iso) => new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+  function fillFilters() {
+    const keep = (sel, items, label) => {
+      const cur = $(sel).value;
+      $(sel).innerHTML = `<option value="">${label}</option>` + [...new Set(items.filter(Boolean))].sort().map((v) => `<option>${esc(v)}</option>`).join("");
+      $(sel).value = cur;
+    };
+    keep("fProject", all.map((r) => r.project), "ทุกงาน");
+    keep("fType", all.map((r) => r.staffType), "ทุกประเภท");
+  }
+  function filtered() {
+    const q = $("q").value.trim().toLowerCase(), p = $("fProject").value, t = $("fType").value;
+    return all.filter((r) =>
+      (!p || r.project === p) && (!t || r.staffType === t) &&
+      (!q || [r.fullName, r.nickname, r.docNo, r.phone, r.role].join(" ").toLowerCase().includes(q)));
+  }
+  function draw() {
+    const list = filtered();
+    $("stats").textContent = `ทั้งหมด ${all.length} ฉบับ` + (list.length !== all.length ? ` · แสดง ${list.length}` : "");
+    $("rows").innerHTML = list.length ? list.map((r, i) => `
+      <tr>
+        <td>${esc(short(r.signedAt))}</td>
+        <td>${esc(r.docNo)}</td>
+        <td>${esc([r.prefix, r.fullName].filter(Boolean).join(" "))}<br><span class="hint" style="font-size:12px">${esc(maskId(r.idCard))}</span></td>
+        <td>${esc(r.nickname)}</td>
+        <td><span class="tag">${esc(r.staffType)}</span></td>
+        <td>${esc(r.role)}</td>
+        <td>${esc(r.project || "-")}</td>
+        <td>${esc(r.phone)}</td>
+        <td><button class="btn ghost small" data-id="${esc(r.docNo)}">ดูสัญญา</button></td>
+      </tr>`).join("") : `<tr><td colspan="9" class="empty">ยังไม่มีผู้ลงนาม</td></tr>`;
+  }
+  ["q", "fProject", "fType"].forEach((id) => $(id).addEventListener("input", draw));
+  function setData(list) {
+    all = list.sort((a, b) => (b.signedAt || "").localeCompare(a.signedAt || ""));
+    fillFilters(); draw();
+  }
+
+  /* ---------- ดู / พิมพ์ ---------- */
+  $("rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-id]"); if (!b) return;
+    const r = all.find((x) => x.docNo === b.dataset.id); if (!r) return;
+    $("docView").innerHTML = r.contractHtml || NDA.render(r);
+    $("viewer").classList.add("open"); $("viewer").scrollTop = 0;
+    document.title = `${r.docNo} ${r.fullName}`;
+  });
+  $("closeBtn").onclick = () => { $("viewer").classList.remove("open"); document.title = "แอดมิน · สัญญารักษาความลับ"; };
+  $("printBtn").onclick = () => { document.body.classList.add("printing-doc"); window.print(); };
+  window.addEventListener("afterprint", () => document.body.classList.remove("printing-doc"));
+
+  /* ---------- CSV ---------- */
+  $("csvBtn").onclick = () => {
+    const cols = [["docNo", "เลขที่"], ["signedAt", "วันเวลาลงนาม"], ["prefix", "คำนำหน้า"], ["fullName", "ชื่อ-นามสกุล"], ["nickname", "ชื่อเล่น"],
+      ["idCard", "เลขบัตรประชาชน"], ["address", "ที่อยู่"], ["staffType", "ประเภท"], ["role", "ตำแหน่ง"], ["project", "งาน"],
+      ["phone", "โทร"], ["email", "อีเมล"], ["version", "ฉบับสัญญา"]];
+    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [cols.map((c) => q(c[1])).join(",")].concat(
+      filtered().map((r) => cols.map(([k]) => q(k === "signedAt" ? NDA.thaiDateTime(r[k]) : k === "idCard" ? "'" + (r[k] || "") : r[k])).join(",")));
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `NDA_signatures_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  };
+
+  /* ---------- Firebase / โหมดทดลอง ---------- */
+  if (!(window.FIREBASE_CONFIG && window.firebase)) {
+    $("demoBanner").hidden = false; $("app").hidden = false;
+    setData(JSON.parse(localStorage.getItem("nda_demo") || "[]"));
+    return;
+  }
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  const auth = firebase.auth(), db = firebase.firestore();
+
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("loginErr").textContent = "";
+    try { await auth.signInWithEmailAndPassword($("em").value.trim(), $("pw").value); }
+    catch { $("loginErr").textContent = "อีเมลหรือรหัสผ่านไม่ถูกต้อง"; }
+  });
+  $("logoutBtn").onclick = () => auth.signOut();
+
+  auth.onAuthStateChanged((user) => {
+    if (unsub) { unsub(); unsub = null; }
+    $("loginCard").hidden = !!user; $("app").hidden = !user; $("logoutBtn").hidden = !user;
+    if (!user) return;
+    unsub = db.collection(COLLECTION).onSnapshot(
+      (snap) => setData(snap.docs.map((d) => d.data())),
+      (err) => { console.error(err); $("stats").textContent = "บัญชีนี้ไม่มีสิทธิ์ดูข้อมูล ตรวจสอบ Firestore Rules"; }
+    );
+  });
+})();
+</script>
+</body>
+</html>

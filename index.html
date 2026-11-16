@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สัญญารักษาความลับ | QOOKID Creation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">QOOKID Creation<small>สัญญารักษาความลับสำหรับทีมงาน</small></div>
+  </div>
+  <div id="demoBanner" class="demo" hidden>โหมดทดลอง: ยังไม่ได้เชื่อม Firebase ข้อมูลจะเก็บไว้ในเครื่องนี้เท่านั้น</div>
+
+  <!-- ===== ฟอร์ม ===== -->
+  <form id="form" novalidate>
+    <section class="card">
+      <h2 class="step"><b>1</b>ข้อมูลผู้ลงนาม</h2>
+      <p class="hint">กรอกให้ตรงกับบัตรประชาชน ข้อมูลจะเติมลงในสัญญาด้านล่างอัตโนมัติ</p>
+      <div class="grid">
+        <div class="field full">
+          <label for="fullName">ชื่อ-นามสกุล</label>
+          <div class="row-prefix">
+            <select id="prefix" name="prefix">
+              <option>นาย</option><option>นาง</option><option>นางสาว</option><option value="">อื่น ๆ</option>
+            </select>
+            <input id="fullName" name="fullName" autocomplete="name" placeholder="ชื่อ นามสกุล">
+          </div>
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="nickname">ชื่อเล่น</label>
+          <input id="nickname" name="nickname">
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="idCard">เลขบัตรประจำตัวประชาชน</label>
+          <input id="idCard" name="idCard" inputmode="numeric" maxlength="17" placeholder="13 หลัก">
+          <div class="msg"></div>
+        </div>
+        <div class="field full">
+          <label for="address">ที่อยู่ตามบัตรประชาชน</label>
+          <input id="address" name="address" autocomplete="street-address">
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="staffType">ประเภทการทำงาน</label>
+          <select id="staffType" name="staffType"></select>
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="role">ตำแหน่ง / หน้าที่</label>
+          <input id="role" name="role" placeholder="เช่น สตาฟลงทะเบียน, กราฟิก">
+          <div class="msg"></div>
+        </div>
+        <div class="field full">
+          <label for="project">งาน / โครงการ <span class="opt">(ถ้ามี)</span></label>
+          <input id="project" name="project">
+        </div>
+        <div class="field">
+          <label for="phone">เบอร์โทรศัพท์</label>
+          <input id="phone" name="phone" inputmode="tel" autocomplete="tel">
+          <div class="msg"></div>
+        </div>
+        <div class="field">
+          <label for="email">อีเมล <span class="opt">(ถ้ามี)</span></label>
+          <input id="email" name="email" type="email" autocomplete="email">
+          <div class="msg"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="step"><b>2</b>อ่านสัญญา</h2>
+      <p class="hint">กรุณาอ่านให้ครบทุกข้อก่อนลงนาม</p>
+      <div class="paper" id="preview"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="step"><b>3</b>ยืนยันและลงนาม</h2>
+      <label class="check"><input type="checkbox" id="agree1"> ข้าพเจ้าได้อ่านและเข้าใจข้อความในหนังสือสัญญารักษาความลับฉบับนี้ครบทุกข้อแล้ว และตกลงปฏิบัติตาม</label>
+      <label class="check"><input type="checkbox" id="agree2"> ข้าพเจ้ายินยอมให้บริษัทเก็บข้อมูลส่วนบุคคลและลายมือชื่อตามข้อ 10 และยอมรับการลงนามทางอิเล็กทรอนิกส์ตามข้อ 11</label>
+
+      <label style="margin-top:12px">ลายมือชื่อ</label>
+      <div class="sigpad" id="sigpad"><canvas id="sig"></canvas><div class="ph">เซ็นชื่อในกรอบนี้</div></div>
+      <div class="sig-tools"><span>ใช้นิ้วหรือเมาส์เซ็นในกรอบ</span><button type="button" class="link" id="clearSig">ล้างลายเซ็น</button></div>
+
+      <div style="margin-top:18px"><button class="btn primary block" id="submitBtn" type="submit">ลงนามและส่งสัญญา</button></div>
+      <div class="err-box" id="formErr"></div>
+    </section>
+  </form>
+
+  <!-- ===== เสร็จแล้ว ===== -->
+  <div id="done" hidden>
+    <section class="card no-print">
+      <div class="done-head">
+        <div class="tick">✓</div>
+        <h2>ลงนามเรียบร้อยแล้ว</h2>
+        <div class="hint" style="margin:0">เลขที่เอกสาร <b id="doneNo"></b> บริษัทได้รับสำเนาแล้ว</div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="window.print()">บันทึกเป็น PDF / พิมพ์</button>
+      </div>
+    </section>
+    <div class="paper" id="finalDoc"></div>
+  </div>
+</div>
+
+<script src="contract.js"></script>
+<script src="config.js" onerror="void 0"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function () {
+  const S = window.NDA_SETTINGS;
+  const $ = (id) => document.getElementById(id);
+  const COLLECTION = "nda_signatures";
+
+  /* ---------- Firebase ---------- */
+  let db = null;
+  if (window.FIREBASE_CONFIG && window.firebase) {
+    try { firebase.initializeApp(window.FIREBASE_CONFIG); db = firebase.firestore(); } catch (e) { console.error(e); }
+  }
+  if (!db) $("demoBanner").hidden = false;
+
+  /* ---------- ตั้งค่าเริ่มต้น ---------- */
+  $("staffType").innerHTML = '<option value="">เลือก</option>' + S.staffTypes.map((t) => `<option>${t}</option>`).join("");
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("project")) { $("project").value = qs.get("project"); }
+  if (qs.get("type") && S.staffTypes.includes(qs.get("type"))) $("staffType").value = qs.get("type");
+
+  const val = (id) => $(id).value.trim();
+  function collect() {
+    return {
+      prefix: $("prefix").value, fullName: val("fullName"), nickname: val("nickname"),
+      idCard: val("idCard").replace(/\D/g, ""), address: val("address"), staffType: $("staffType").value,
+      role: val("role"), project: val("project"), phone: val("phone"), email: val("email")
+    };
+  }
+  function refreshPreview() { $("preview").innerHTML = NDA.render(collect()); }
+  $("form").addEventListener("input", refreshPreview);
+  $("form").addEventListener("change", refreshPreview);
+  refreshPreview();
+
+  // จัดรูปแบบเลขบัตรระหว่างพิมพ์
+  $("idCard").addEventListener("input", (e) => {
+    const d = e.target.value.replace(/\D/g, "").slice(0, 13);
+    const parts = [d.slice(0, 1), d.slice(1, 5), d.slice(5, 10), d.slice(10, 12), d.slice(12, 13)].filter(Boolean);
+    e.target.value = parts.join("-");
+  });
+
+  /* ---------- ลายเซ็น ---------- */
+  const canvas = $("sig"), pad = $("sigpad"), ctx = canvas.getContext("2d");
+  let drawing = false, hasInk = false, last = null;
+  function sizeCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const saved = hasInk ? canvas.toDataURL() : null;
+    canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#0b1f4a"; ctx.lineWidth = 2.4;
+    if (saved) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight); img.src = saved; }
+  }
+  const pos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  canvas.addEventListener("pointerdown", (e) => { drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.arc(last.x, last.y, 1.1, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return; const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p;
+    if (!hasInk) { hasInk = true; pad.classList.add("has"); }
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((t) => canvas.addEventListener(t, () => { drawing = false; }));
+  $("clearSig").onclick = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); hasInk = false; pad.classList.remove("has"); };
+  window.addEventListener("resize", sizeCanvas); sizeCanvas();
+
+  // ส่งออกลายเซ็นเป็น PNG ขนาดพอดี ตัดขอบว่าง
+  function exportSignature() {
+    const w = canvas.width, h = canvas.height, data = ctx.getImageData(0, 0, w, h).data;
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+      if (data[(y * w + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 <= x0) return null;
+    const pad = 12, sw = x1 - x0 + pad * 2, sh = y1 - y0 + pad * 2;
+    const scale = Math.min(1, 600 / sw);
+    const out = document.createElement("canvas"); out.width = Math.round(sw * scale); out.height = Math.round(sh * scale);
+    out.getContext("2d").drawImage(canvas, x0 - pad, y0 - pad, sw, sh, 0, 0, out.width, out.height);
+    return out.toDataURL("image/png");
+  }
+
+  /* ---------- ตรวจข้อมูล ---------- */
+  function validThaiId(id) {
+    if (!/^\d{13}$/.test(id)) return false;
+    let sum = 0; for (let i = 0; i < 12; i++) sum += +id[i] * (13 - i);
+    return (11 - (sum % 11)) % 10 === +id[12];
+  }
+  function setErr(id, msg) {
+    const f = $(id).closest(".field"); if (!f) return;
+    f.classList.toggle("bad", !!msg); f.querySelector(".msg").textContent = msg || "";
+  }
+  function validate(r) {
+    const errs = {
+      fullName: r.fullName.split(/\s+/).length >= 2 ? "" : "กรอกทั้งชื่อและนามสกุล",
+      nickname: r.nickname ? "" : "กรอกชื่อเล่น",
+      idCard: validThaiId(r.idCard) ? "" : "เลขบัตรไม่ถูกต้อง",
+      address: r.address.length >= 8 ? "" : "กรอกที่อยู่",
+      staffType: r.staffType ? "" : "เลือกประเภทการทำงาน",
+      role: r.role ? "" : "กรอกตำแหน่งหรือหน้าที่",
+      phone: r.phone.replace(/\D/g, "").length >= 9 ? "" : "กรอกเบอร์โทรให้ครบ",
+      email: !r.email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email) ? "" : "รูปแบบอีเมลไม่ถูกต้อง"
+    };
+    Object.entries(errs).forEach(([k, m]) => setErr(k, m));
+    const first = Object.keys(errs).find((k) => errs[k]);
+    if (first) { $(first).scrollIntoView({ behavior: "smooth", block: "center" }); return "กรอกข้อมูลในขั้นที่ 1 ให้ครบ"; }
+    if (!$("agree1").checked || !$("agree2").checked) return "กรุณาติ๊กยืนยันทั้งสองข้อ";
+    if (!hasInk) return "กรุณาเซ็นชื่อในกรอบ";
+    return "";
+  }
+
+  function newDocNo() {
+    const d = new Date(), p = (n) => String(n).padStart(2, "0");
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `NDA-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${rand}`;
+  }
+
+  /* ---------- ส่ง ---------- */
+  let sending = false;
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault(); if (sending) return;
+    $("formErr").textContent = "";
+    const r = collect();
+    const err = validate(r);
+    if (err) { $("formErr").textContent = err; return; }
+
+    const signature = exportSignature();
+    if (!signature) { $("formErr").textContent = "กรุณาเซ็นชื่อในกรอบ"; return; }
+
+    sending = true; $("submitBtn").disabled = true; $("submitBtn").textContent = "กำลังส่ง...";
+    const record = Object.assign(r, {
+      docNo: newDocNo(), signature, signedAt: new Date().toISOString(),
+      version: S.version, userAgent: navigator.userAgent.slice(0, 300)
+    });
+    record.contractHtml = NDA.render(record); // เก็บข้อความสัญญาฉบับที่เซ็นจริงไว้ด้วย
+
+    try {
+      if (db) {
+        await db.collection(COLLECTION).doc(record.docNo).set(
+          Object.assign({}, record, { serverTime: firebase.firestore.FieldValue.serverTimestamp() })
+        );
+      } else {
+        const list = JSON.parse(localStorage.getItem("nda_demo") || "[]");
+        list.push(record); localStorage.setItem("nda_demo", JSON.stringify(list));
+      }
+      $("form").hidden = true; $("done").hidden = false;
+      $("doneNo").textContent = record.docNo;
+      $("finalDoc").innerHTML = record.contractHtml;
+      document.title = record.docNo + " " + record.fullName;
+      window.scrollTo(0, 0);
+    } catch (ex) {
+      console.error(ex);
+      $("formErr").textContent = "ส่งไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง";
+      sending = false; $("submitBtn").disabled = false; $("submitBtn").textContent = "ลงนามและส่งสัญญา";
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // อีเมลแอดมินที่ดูรายชื่อได้ (ต้องสร้างบัญชีใน Firebase Authentication ด้วย)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['admin@qookid.co.th'];
+    }
+
+    match /nda_signatures/{docId} {
+      // สตาฟส่งได้อย่างเดียว เขียนทับหรือแก้ฉบับที่เซ็นแล้วไม่ได้
+      allow create: if request.resource.data.docNo == docId
+        && request.resource.data.keys().hasAll(['fullName', 'idCard', 'signature', 'signedAt', 'contractHtml'])
+        && request.resource.data.idCard is string && request.resource.data.idCard.size() == 13
+        && request.resource.data.signature is string && request.resource.data.signature.size() < 400000
+        && request.resource.data.contractHtml.size() < 200000;
+
+      // อ่านได้เฉพาะแอดมิน ไม่มีใครแก้หรือลบผ่านหน้าเว็บ (ลบได้จาก Firebase Console)
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // คอลเลกชันของระบบอื่นในโปรเจกต์เดียวกันให้คงกฎเดิมไว้ด้านล่างนี้
+  }
+}
