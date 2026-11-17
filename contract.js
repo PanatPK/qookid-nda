@@ -7,9 +7,10 @@ window.NDA_SETTINGS = {
   companyTh: "บริษัท คู่คิด ครีเอชั่น จำกัด",
   companyEn: "QOOKID Creation Co., Ltd.",
   address: "454/226 ซอยลาดพร้าว 87 (จันทราสุข) แขวงคลองเจ้าคุณสิงห์ เขตวังทองหลาง กรุงเทพมหานคร 10310",
-  signerName: "",                               // ชื่อผู้มีอำนาจลงนามฝั่งบริษัท เว้นว่าง = เว้นเส้นไว้เซ็นมือ
-  signerTitle: "ผู้มีอำนาจลงนาม",
-  signerImage: "",                              // ไฟล์ลายเซ็นบริษัท เช่น "company-sign.png" เว้นว่าง = ไม่ใส่
+  signerName: "อรนุช เจริญชัยสมบัติ",              // ชื่อผู้มีอำนาจลงนามฝั่งบริษัท เว้นว่าง = เว้นเส้นไว้เซ็นมือ
+  signerTitle: "กรรมการผู้จัดการ",
+  signerImage: "",                              // ไฟล์ลายเซ็นบริษัท เว้นว่าง = เซ็นมือบนฉบับพิมพ์
+  stampImage: "company-stamp.png",              // ตราบริษัท เว้นว่าง = ไม่ใส่
   payDays: 30,                                  // จ่ายค่าตอบแทนภายในกี่วันหลังจบงาน
   callTimeMinutes: 30,                          // ต้องมาถึงก่อนเวลานัดกี่นาที
   leaveNoticeHours: 24,                         // แจ้งลา/สายล่วงหน้ากี่ชั่วโมง
@@ -176,7 +177,7 @@ window.NDA = (function () {
 
   <div class="c-sign-row">
     <div class="c-sign">
-      <div class="sig-box">${S.signerImage ? `<img src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
+      <div class="sig-box co-sig">${S.stampImage ? `<img class="co-stamp" src="${esc(S.stampImage)}" alt="ตราบริษัท">` : ""}${S.signerImage ? `<img class="co-sign" src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
       <div>ลงชื่อ ........................................ บริษัท</div>
       <div>( ${S.signerName ? esc(S.signerName) : "........................................"} )</div>
       <div>${esc(S.signerTitle)}</div>
