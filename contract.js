@@ -23,6 +23,8 @@ window.NDA = (function () {
   const S = window.NDA_SETTINGS;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const blank = (v, w) => v ? `<b class="fill">${esc(v)}</b>` : `<span class="blank" style="min-width:${w || 10}em"></span>`;
+  // ไม่ให้ตัดบรรทัดกลางคำ เช่น "เขตวังทองหลาง"
+  const nw = (t) => String(t).split(" ").map((w) => `<span class="nw">${esc(w)}</span>`).join(" ");
   const list = (items) => `<ol class="sub">${items.map((i) => `<li>${i}</li>`).join("")}</ol>`;
 
   function thaiDate(d) {
@@ -55,11 +57,11 @@ window.NDA = (function () {
     <div class="c-sub">Employment and Confidentiality Agreement</div>
     <div class="c-meta">
       <div>เลขที่ ${blank(r.docNo, 8)} &nbsp; วันที่ ${blank(r.signedAt ? thaiDate(r.signedAt) : "", 8)}</div>
-      <div>ทำที่ ${co} ${esc(S.address)}</div>
+      <div>ทำที่ ${co}</div>
     </div>
   </header>
 
-  <p class="indent">สัญญาฉบับนี้ทำขึ้นระหว่าง ${co} ซึ่งต่อไปในสัญญานี้เรียกว่า “บริษัท” ฝ่ายหนึ่ง กับ
+  <p class="indent">สัญญาฉบับนี้ทำขึ้นระหว่าง ${co} สำนักงานตั้งอยู่เลขที่ ${esc(S.address)} ซึ่งต่อไปในสัญญานี้เรียกว่า “บริษัท” ฝ่ายหนึ่ง กับ
   ${blank(fullName, 14)} ถือบัตรประจำตัวประชาชนเลขที่ ${blank(formatId(r.idCard), 11)}
   อยู่บ้านเลขที่ ${blank(r.address, 18)} ซึ่งต่อไปในสัญญานี้เรียกว่า “ผู้ปฏิบัติงาน” อีกฝ่ายหนึ่ง
   ทั้งสองฝ่ายตกลงกันดังต่อไปนี้</p>
