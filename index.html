@@ -292,17 +292,23 @@
       for (let xx = -span / 2 + (row % 2) * step / 2; xx < span / 2; xx += step) x.fillText(text, xx, yy);
     x.restore();
 
-    // กล่องรับรองสำเนา มุมขวาล่าง
+    // รับรองสำเนา มุมขวาล่าง ไม่มีกรอบ ใช้ขอบขาวรอบตัวอักษรและลายเซ็นให้อ่านได้บนพื้นทุกแบบ
     const bw = Math.round(Math.min(w * 0.42, 520)), bh = Math.round(bw * 0.5), m = Math.round(bw * 0.05);
-    const bx = w - bw - m, by = h - bh - m;
-    x.fillStyle = "rgba(255,255,255,.88)"; x.strokeStyle = "#0b1f4a"; x.lineWidth = Math.max(1.5, bw / 220);
-    x.fillRect(bx, by, bw, bh); x.strokeRect(bx, by, bw, bh);
-    x.fillStyle = "#0b1f4a"; x.textAlign = "center"; x.textBaseline = "top";
-    x.font = `700 ${Math.round(bh * 0.17)}px ${font}`; x.fillText("สำเนาถูกต้อง", bx + bw / 2, by + bh * 0.06);
-    const sh = bh * 0.42, sw = Math.min(bw * 0.8, sh * sig.width / sig.height);
-    x.drawImage(sig, bx + (bw - sw) / 2, by + bh * 0.28, sw, sw * sig.height / sig.width);
-    x.font = `400 ${Math.round(bh * 0.1)}px ${font}`;
-    x.fillText(`${dateText}  ${docNo}`, bx + bw / 2, by + bh * 0.82);
+    const bx = w - bw - m, by = h - bh - m, ink = "#0b1f4a", halo = Math.max(2, bh * 0.035);
+    const haloText = (t, tx, ty, size, weight) => {
+      x.font = `${weight} ${size}px ${font}`; x.textAlign = "center"; x.textBaseline = "top";
+      x.lineJoin = "round"; x.lineWidth = halo * 2; x.strokeStyle = "rgba(255,255,255,.92)"; x.strokeText(t, tx, ty);
+      x.fillStyle = ink; x.fillText(t, tx, ty);
+    };
+    haloText("สำเนาถูกต้อง", bx + bw / 2, by + bh * 0.06, Math.round(bh * 0.17), 700);
+    const sh = bh * 0.42, sw = Math.min(bw * 0.8, sh * sig.width / sig.height), shh = sw * sig.height / sig.width;
+    const sx = bx + (bw - sw) / 2, sy = by + bh * 0.28;
+    // ขอบขาวรอบลายเซ็น: วาดลายเซ็นสีขาวเยื้องรอบ ๆ ก่อน แล้ววาดลายเซ็นจริงทับ
+    const wc = document.createElement("canvas"); wc.width = sig.width; wc.height = sig.height;
+    const wx = wc.getContext("2d"); wx.drawImage(sig, 0, 0); wx.globalCompositeOperation = "source-in"; wx.fillStyle = "#fff"; wx.fillRect(0, 0, wc.width, wc.height);
+    for (let k = 0; k < 16; k++) { const an = k / 16 * Math.PI * 2; x.drawImage(wc, sx + Math.cos(an) * halo, sy + Math.sin(an) * halo, sw, shh); }
+    x.drawImage(sig, sx, sy, sw, shh);
+    haloText(`${dateText}  ${docNo}`, bx + bw / 2, by + bh * 0.82, Math.round(bh * 0.1), 500);
 
     // บีบขนาด
     let q = 0.82, out = c.toDataURL("image/jpeg", q);
