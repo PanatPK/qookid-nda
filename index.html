@@ -18,60 +18,67 @@
     <section class="card">
       <h2 class="step"><b>1</b>ข้อมูลผู้ลงนาม</h2>
       <p class="hint">กรอกให้ตรงกับบัตรประชาชน ข้อมูลจะเติมลงในสัญญาด้านล่างอัตโนมัติ</p>
-      <div class="grid">
-        <div class="field full">
+      <p class="hint" id="projectHint" hidden></p>
+      <div class="g6">
+        <div class="grp">ข้อมูลส่วนตัว</div>
+        <div class="field s1 m2">
+          <label for="prefix">คำนำหน้า</label>
+          <select id="prefix" name="prefix">
+            <option>นาย</option><option>นาง</option><option>นางสาว</option><option value="">อื่น ๆ</option>
+          </select>
+        </div>
+        <div class="field s3 m4">
           <label for="fullName">ชื่อ-นามสกุล</label>
-          <div class="row-prefix">
-            <select id="prefix" name="prefix">
-              <option>นาย</option><option>นาง</option><option>นางสาว</option><option value="">อื่น ๆ</option>
-            </select>
-            <input id="fullName" name="fullName" autocomplete="name" placeholder="ชื่อ นามสกุล">
-          </div>
+          <input id="fullName" name="fullName" autocomplete="name" placeholder="ชื่อ นามสกุล">
           <div class="msg"></div>
         </div>
-        <div class="field">
+        <div class="field s2 m2">
           <label for="nickname">ชื่อเล่น</label>
           <input id="nickname" name="nickname">
           <div class="msg"></div>
         </div>
-        <div class="field">
-          <label for="idCard">เลขบัตรประจำตัวประชาชน</label>
+        <div class="field s2 m4">
+          <label for="idCard">เลขบัตรประชาชน</label>
           <input id="idCard" name="idCard" inputmode="numeric" maxlength="17" placeholder="13 หลัก">
           <div class="msg"></div>
         </div>
-        <div class="field full">
-          <label for="address">ที่อยู่ตามบัตรประชาชน</label>
-          <input id="address" name="address" autocomplete="street-address">
-          <div class="msg"></div>
-        </div>
-        <div class="field">
-          <label for="staffType">ประเภทการทำงาน</label>
-          <select id="staffType" name="staffType"></select>
-          <div class="msg"></div>
-        </div>
-        <div class="field">
-          <label for="role">ตำแหน่ง / หน้าที่</label>
-          <input id="role" name="role" placeholder="เช่น สตาฟลงทะเบียน, กราฟิก">
-          <div class="msg"></div>
-        </div>
-        <div class="field full">
-          <label for="project">งาน / โครงการ <span class="opt">(ถ้ามี)</span></label>
-          <input id="project" name="project">
-        </div>
-        <div class="field">
-          <label for="phone">เบอร์โทรศัพท์</label>
+        <div class="field s2 m3">
+          <label for="phone">เบอร์โทร</label>
           <input id="phone" name="phone" inputmode="numeric" autocomplete="tel" maxlength="12" placeholder="08X-XXX-XXXX">
           <div class="msg"></div>
         </div>
-        <div class="field">
+        <div class="field s2 m3">
           <label for="email">อีเมล <span class="opt">(ถ้ามี)</span></label>
           <input id="email" name="email" type="email" autocomplete="email">
           <div class="msg"></div>
         </div>
-        <div class="field">
-          <label for="bankName">ธนาคารสำหรับรับค่าตอบแทน</label>
+        <div class="field s6">
+          <label for="address">ที่อยู่ตามบัตรประชาชน</label>
+          <input id="address" name="address" autocomplete="street-address">
+          <div class="msg"></div>
+        </div>
+
+        <div class="grp">การทำงาน</div>
+        <div class="field s2 m6">
+          <label for="staffType">ประเภท</label>
+          <select id="staffType" name="staffType"></select>
+          <div class="msg"></div>
+        </div>
+        <div class="field s4 m6">
+          <label for="role">ตำแหน่ง / หน้าที่</label>
+          <input id="role" name="role" placeholder="เช่น สตาฟลงทะเบียน, กราฟิก">
+          <div class="msg"></div>
+        </div>
+        <div class="field s6" id="projectField">
+          <label for="project">งาน / โครงการ <span class="opt">(ถ้ามี)</span></label>
+          <input id="project" name="project">
+        </div>
+
+        <div class="grp">บัญชีรับค่าตอบแทน</div>
+        <div class="field s3 m6">
+          <label for="bankName">ธนาคาร</label>
           <select id="bankName" name="bankName">
-            <option value="">เลือก</option>
+            <option value="">เลือกธนาคาร</option>
             <option>กสิกรไทย</option><option>ไทยพาณิชย์</option><option>กรุงเทพ</option><option>กรุงไทย</option>
             <option>กรุงศรีอยุธยา</option><option>ทหารไทยธนชาต (ttb)</option><option>ออมสิน</option><option>ธ.ก.ส.</option>
             <option>ยูโอบี</option><option>ซีไอเอ็มบี ไทย</option><option>เกียรตินาคินภัทร</option><option>แลนด์ แอนด์ เฮ้าส์</option>
@@ -79,14 +86,15 @@
           </select>
           <div class="msg"></div>
         </div>
-        <div class="field">
+        <div class="field s3 m6">
           <label for="bankAcc">เลขที่บัญชี</label>
-          <input id="bankAcc" name="bankAcc" inputmode="numeric" maxlength="18" placeholder="ตัวเลขเท่านั้น">
+          <input id="bankAcc" name="bankAcc" inputmode="numeric" maxlength="15" placeholder="ตัวเลขเท่านั้น">
           <div class="msg"></div>
         </div>
-        <div class="field full">
+        <label class="check s6 tight"><input type="checkbox" id="sameName" checked> ชื่อบัญชีตรงกับชื่อผู้ลงนาม</label>
+        <div class="field s6" id="accNameField" hidden>
           <label for="bankAccName">ชื่อบัญชี</label>
-          <input id="bankAccName" name="bankAccName" placeholder="ต้องเป็นชื่อเดียวกับผู้ลงนาม">
+          <input id="bankAccName" name="bankAccName">
           <div class="msg"></div>
         </div>
       </div>
@@ -169,7 +177,10 @@
   /* ---------- ตั้งค่าเริ่มต้น ---------- */
   $("staffType").innerHTML = '<option value="">เลือก</option>' + S.staffTypes.map((t) => `<option>${t}</option>`).join("");
   const qs = new URLSearchParams(location.search);
-  if (qs.get("project")) { $("project").value = qs.get("project"); }
+  if (qs.get("project")) {
+    $("project").value = qs.get("project"); $("projectField").hidden = true;
+    $("projectHint").innerHTML = "งาน: <b>" + NDA.esc(qs.get("project")) + "</b>"; $("projectHint").hidden = false;
+  }
   if (qs.get("type") && S.staffTypes.includes(qs.get("type"))) $("staffType").value = qs.get("type");
 
   const val = (id) => $(id).value.trim();
@@ -178,7 +189,7 @@
       prefix: $("prefix").value, fullName: val("fullName"), nickname: val("nickname"),
       idCard: val("idCard").replace(/\D/g, ""), address: val("address"), staffType: $("staffType").value,
       role: val("role"), project: val("project"), phone: val("phone"), email: val("email"),
-      bankName: $("bankName").value, bankAcc: val("bankAcc").replace(/\D/g, ""), bankAccName: val("bankAccName")
+      bankName: $("bankName").value, bankAcc: val("bankAcc").replace(/\D/g, ""), bankAccName: $("sameName").checked ? [$("prefix").value, val("fullName")].filter(Boolean).join(" ") : val("bankAccName")
     };
   }
   function refreshPreview() { $("preview").innerHTML = NDA.render(collect()); }
@@ -204,7 +215,7 @@
     return [d.slice(0, cut[0]), d.slice(cut[0], cut[1]), d.slice(cut[1])].filter(Boolean).join("-");
   }
   $("bankAcc").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 15); });
-  $("fullName").addEventListener("change", () => { if (!$("bankAccName").value) $("bankAccName").value = [$("prefix").value, val("fullName")].filter(Boolean).join(" "); });
+  $("sameName").addEventListener("change", () => { $("accNameField").hidden = $("sameName").checked; });
   $("phone").addEventListener("input", (e) => { e.target.value = formatPhone(e.target.value); });
 
   /* ---------- เอกสารแนบ ---------- */
@@ -359,7 +370,7 @@
       bankName: r.bankName ? "" : "เลือกธนาคาร",
       bankAcc: r.bankAcc.length >= 10 && r.bankAcc.length <= 15 ? "" : "เลขบัญชีต้องมี 10–15 หลัก",
       bankAccName: r.bankAccName.length >= 4 ? "" : "กรอกชื่อบัญชี",
-      phone: (() => { const d = r.phone.replace(/\D/g, ""); return d.length === phoneLen(d) ? "" : "กรอกเบอร์โทรให้ครบ " + phoneLen(d) + " หลัก"; })(),
+      phone: (() => { const d = r.phone.replace(/\D/g, ""); return !d ? "กรอกเบอร์โทร" : d.length === phoneLen(d) ? "" : "เบอร์ต้องมี " + phoneLen(d) + " หลัก"; })(),
       email: !r.email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email) ? "" : "รูปแบบอีเมลไม่ถูกต้อง"
     };
     Object.entries(errs).forEach(([k, m]) => setErr(k, m));

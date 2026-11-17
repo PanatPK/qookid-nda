@@ -34,11 +34,32 @@ body {
 .grid .full { grid-column: 1 / -1; }
 @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .card { padding: 18px 16px; } }
 
-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+[hidden] { display: none !important; }
+label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #3a3e46; }
 label .opt { color: var(--muted); font-weight: 400; }
 input, select, textarea {
-  width: 100%; font: inherit; color: inherit; padding: 11px 12px; border: 1px solid #cfd2d8; border-radius: 10px; background: #fff;
+  width: 100%; font: inherit; font-size: 15px; color: inherit; padding: 0 12px; height: 42px; border: 1px solid #cfd2d8; border-radius: 9px; background: #fff;
 }
+textarea { height: auto; padding: 10px 12px; }
+input[type=checkbox], input[type=radio] { height: auto; padding: 0; }
+input[type=file] { height: auto; }
+select {
+  -webkit-appearance: none; appearance: none; padding-right: 34px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236b7079' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+
+/* ฟอร์มแบบ 6 คอลัมน์ */
+.g6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px 12px; }
+.g6 > * { grid-column: span 6; min-width: 0; }
+.g6 .s1 { grid-column: span 1; } .g6 .s2 { grid-column: span 2; } .g6 .s3 { grid-column: span 3; }
+.g6 .s4 { grid-column: span 4; } .g6 .s6 { grid-column: span 6; }
+.g6 .grp { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); text-transform: uppercase;
+  padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--line); }
+.g6 .grp:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+@media (max-width: 600px) {
+  .g6 .m2 { grid-column: span 2; } .g6 .m3 { grid-column: span 3; } .g6 .m4 { grid-column: span 4; } .g6 .m6 { grid-column: span 6; }
+}
+.check.tight { padding: 2px 0 0; font-size: 14px; }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 .field.bad input, .field.bad select { border-color: var(--err); }
 .field .msg { color: var(--err); font-size: 13px; min-height: 0; }
@@ -135,7 +156,7 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 
 /* ---------- admin ---------- */
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.toolbar input, .toolbar select { width: auto; flex: 1 1 180px; padding: 9px 11px; }
+.toolbar input, .toolbar select { width: auto; flex: 1 1 180px; height: 38px; }
 .stats { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
