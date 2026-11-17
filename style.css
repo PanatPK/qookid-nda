@@ -150,6 +150,10 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .contract .c-sign-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 34px; }
 @media (max-width: 600px) { .contract .c-sign-row { grid-template-columns: 1fr; } }
 .contract .c-sign { text-align: center; }
+.contract .co-sig { position: relative; }
+.contract .co-sig .co-stamp { position: absolute; right: -4px; bottom: 20px; height: 84px; max-height: none; max-width: none;
+  transform: rotate(-6deg); opacity: .85; mix-blend-mode: multiply; }
+.contract .co-sig .co-sign { position: relative; z-index: 1; max-height: 64px; }
 .contract .sig-box { height: 80px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: -26px; }
 .contract .sig-box img { max-height: 90px; max-width: 240px; }
 .contract .c-foot { margin-top: 28px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
