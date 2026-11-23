@@ -67,6 +67,7 @@
 <div class="overlay" id="viewer">
   <div class="inner">
     <div class="bar no-print">
+      <button class="btn ghost small" id="delBtn" style="margin-right:auto;color:var(--err)">ลบฉบับนี้</button>
       <button class="btn primary small" id="printBtn">บันทึกเป็น PDF / พิมพ์</button>
       <button class="btn ghost small" id="closeBtn">ปิด</button>
     </div>
@@ -174,6 +175,29 @@
       console.error(e); box.innerHTML = '<div class="hint">โหลดเอกสารแนบไม่ได้ ตรวจสอบ Firestore Rules ของ nda_files</div>';
     }
   }
+  let viewing = null;
+  $("rows").addEventListener("click", (e) => { const b = e.target.closest("button[data-id]"); if (b) viewing = b.dataset.id; });
+  $("delBtn").onclick = async () => {
+    const r = all.find((x) => x.docNo === viewing); if (!r) return;
+    const S = makeStore(db);
+    try {
+      const used = await S.list("assignments", "docNo", r.docNo);
+      if (used.length) return alert(`ลบไม่ได้ ${r.nickname || r.fullName} ยังอยู่ในใบงาน ${used.length} งาน ให้เอาออกจากงานก่อน`);
+      const typed = prompt(`ลบสัญญา ${r.docNo} ของ ${r.fullName} พร้อมสำเนาบัตรและหน้าบัญชี\nลบแล้วกู้คืนไม่ได้ พิมพ์คำว่า ลบ เพื่อยืนยัน`);
+      if ((typed || "").trim() !== "ลบ") return;
+      if (db) {
+        const batch = db.batch();
+        batch.delete(db.collection(COLLECTION).doc(r.docNo));
+        ["idcard", "bank"].forEach((k) => batch.delete(db.collection(FILES).doc(`${r.docNo}_${k}`)));
+        await batch.commit();
+      } else {
+        localStorage.setItem("nda_demo", JSON.stringify(JSON.parse(localStorage.getItem("nda_demo") || "[]").filter((x) => x.docNo !== r.docNo)));
+        const fm = JSON.parse(localStorage.getItem("nda_demo_files") || "{}"); delete fm[r.docNo]; localStorage.setItem("nda_demo_files", JSON.stringify(fm));
+        setData(all.filter((x) => x.docNo !== r.docNo));
+      }
+      $("closeBtn").click();
+    } catch (e) { console.error(e); alert("ลบไม่สำเร็จ ตรวจสอบ Firestore Rules ว่าอัปเดตเป็นชุดล่าสุดแล้ว"); }
+  };
   $("closeBtn").onclick = () => { $("viewer").classList.remove("open"); document.title = "แอดมิน สัญญาจ้างงาน"; };
   $("printBtn").onclick = () => { document.body.classList.add("printing-doc"); window.print(); };
   window.addEventListener("afterprint", () => document.body.classList.remove("printing-doc"));
