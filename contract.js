@@ -9,7 +9,7 @@ window.NDA_SETTINGS = {
   address: "454/226 ซอยลาดพร้าว 87 (จันทราสุข) แขวงคลองเจ้าคุณสิงห์ เขตวังทองหลาง กรุงเทพมหานคร 10310",
   signerName: "อรนุช เจริญชัยสมบัติ",              // ชื่อผู้มีอำนาจลงนามฝั่งบริษัท เว้นว่าง = เว้นเส้นไว้เซ็นมือ
   signerTitle: "กรรมการผู้จัดการ",
-  signerImage: "",                              // ไฟล์ลายเซ็นบริษัท เว้นว่าง = เซ็นมือบนฉบับพิมพ์
+  signerImage: "company-sign.png",              // ไฟล์ลายเซ็นบริษัท เว้นว่าง = เซ็นมือบนฉบับพิมพ์
   stampImage: "company-stamp.png",              // ตราบริษัท เว้นว่าง = ไม่ใส่
   payDays: 30,                                  // จ่ายค่าตอบแทนภายในกี่วันหลังจบงาน
   callTimeMinutes: 30,                          // ต้องมาถึงก่อนเวลานัดกี่นาที
@@ -179,7 +179,7 @@ window.NDA = (function () {
 
   <div class="c-sign-row">
     <div class="c-sign">
-      <div class="sig-box co-sig">${S.stampImage && r.signedAt ? `<img class="co-stamp" src="${esc(S.stampImage)}" alt="ตราบริษัท">` : ""}${S.signerImage ? `<img class="co-sign" src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
+      <div class="sig-box co-sig">${S.stampImage && r.signedAt ? `<img class="co-stamp" src="${esc(S.stampImage)}" alt="ตราบริษัท">` : ""}${S.signerImage && r.signedAt ? `<img class="co-sign" src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
       <div>ลงชื่อ ........................................ บริษัท</div>
       <div>( ${S.signerName ? esc(S.signerName) : "........................................"} )</div>
       <div>${esc(S.signerTitle)}</div>
