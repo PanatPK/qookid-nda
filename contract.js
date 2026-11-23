@@ -179,7 +179,7 @@ window.NDA = (function () {
 
   <div class="c-sign-row">
     <div class="c-sign">
-      <div class="sig-box co-sig">${S.stampImage ? `<img class="co-stamp" src="${esc(S.stampImage)}" alt="ตราบริษัท">` : ""}${S.signerImage ? `<img class="co-sign" src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
+      <div class="sig-box co-sig">${S.stampImage && r.signedAt ? `<img class="co-stamp" src="${esc(S.stampImage)}" alt="ตราบริษัท">` : ""}${S.signerImage ? `<img class="co-sign" src="${esc(S.signerImage)}" alt="ลายมือชื่อบริษัท">` : ""}</div>
       <div>ลงชื่อ ........................................ บริษัท</div>
       <div>( ${S.signerName ? esc(S.signerName) : "........................................"} )</div>
       <div>${esc(S.signerTitle)}</div>
