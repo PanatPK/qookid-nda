@@ -16,9 +16,12 @@ service cloud.firestore {
         && request.resource.data.signature is string && request.resource.data.signature.size() < 400000
         && request.resource.data.contractHtml.size() < 200000;
 
-      // อ่านได้เฉพาะแอดมิน ไม่มีใครแก้หรือลบผ่านหน้าเว็บ (ลบได้จาก Firebase Console)
-      allow read: if isAdmin();
-      allow update, delete: if false;
+      // อ่านและลบได้เฉพาะแอดมิน ไม่มีใครแก้ฉบับที่เซ็นแล้ว
+      allow read, delete: if isAdmin();
+      // แอดมินแก้ได้เฉพาะข้อมูลหลังบ้าน ชื่อ เลขบัตร ลายเซ็น และตัวสัญญาที่เซ็นแล้วแก้ไม่ได้
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+             ['nickname', 'staffType', 'role', 'project', 'phone', 'email', 'bankName', 'bankAcc', 'bankAccName', 'editedAt']);
     }
 
     // สำเนาบัตรประชาชนและหน้าบัญชี (รูป JPEG เก็บเป็นข้อความ) ส่งได้อย่างเดียว อ่านได้เฉพาะแอดมิน
@@ -27,8 +30,8 @@ service cloud.firestore {
         && fileId == request.resource.data.docNo + '_' + request.resource.data.kind
         && request.resource.data.data is string
         && request.resource.data.data.size() < 900000;
-      allow read: if isAdmin();
-      allow update, delete: if false;
+      allow read, delete: if isAdmin();
+      allow update: if false;
     }
 
     // งาน: แอดมินเท่านั้น

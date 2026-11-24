@@ -50,6 +50,12 @@
         <select id="fType"><option value="">ทุกประเภท</option></select>
         <button class="btn ghost small" id="csvBtn">ดาวน์โหลด CSV</button>
       </div>
+      <div class="bulkbar" id="bulkBar" hidden>
+        <span id="bulkLabel"></span>
+        <input id="bulkName" list="projList" placeholder="ชื่องานใหม่">
+        <button class="btn ghost small" id="bulkBtn">เปลี่ยนชื่องานทั้งหมดที่แสดง</button>
+        <span class="err-box" id="bulkMsg" style="margin:0"></span>
+      </div>
       <div class="stats" id="stats">กำลังโหลด...</div>
       <div class="tablewrap">
         <table>
@@ -62,6 +68,33 @@
     <div id="jobsTab" hidden></div>
   </div>
 </div>
+
+<!-- แก้ไขข้อมูลผู้ลงนาม -->
+<div class="overlay" id="editor">
+  <div class="inner" style="max-width:560px">
+    <section class="card">
+      <h2 class="step" style="font-size:17px;margin-bottom:4px">แก้ไขข้อมูล <span id="eName" style="font-weight:400"></span></h2>
+      <p class="hint" style="margin:0 0 14px">แก้ได้เฉพาะข้อมูลที่ใช้ในหลังบ้าน ตัวสัญญาที่เซ็นแล้วจะไม่เปลี่ยน ชื่อ เลขบัตร และลายเซ็นแก้ไม่ได้</p>
+      <div class="g6">
+        <div class="field s3 m6"><label>ชื่อเล่น</label><input id="eNick"></div>
+        <div class="field s3 m6"><label>ประเภท</label><select id="eType"></select></div>
+        <div class="field s6"><label>ตำแหน่ง / หน้าที่</label><input id="eRole"></div>
+        <div class="field s6"><label>งาน / โครงการ</label><input id="eProject" list="projList"></div>
+        <div class="field s3 m6"><label>เบอร์โทร</label><input id="ePhone" inputmode="numeric"></div>
+        <div class="field s3 m6"><label>อีเมล</label><input id="eEmail" type="email"></div>
+        <div class="field s3 m6"><label>ธนาคาร</label><select id="eBank"></select></div>
+        <div class="field s3 m6"><label>เลขที่บัญชี</label><input id="eAcc" inputmode="numeric" maxlength="15"></div>
+        <div class="field s6"><label>ชื่อบัญชี</label><input id="eAccName"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;align-items:center">
+        <button class="btn primary" id="eSave">บันทึก</button>
+        <button class="btn ghost" id="eCancel">ยกเลิก</button>
+        <span class="err-box" id="eErr" style="margin:0"></span>
+      </div>
+    </section>
+  </div>
+</div>
+<datalist id="projList"></datalist>
 
 <!-- ดูเอกสาร -->
 <div class="overlay" id="viewer">
@@ -137,11 +170,13 @@
         <td>${esc(r.role)}</td>
         <td>${esc(r.project || "-")}</td>
         <td>${esc(r.phone)}</td>
-        <td><button class="btn ghost small" data-id="${esc(r.docNo)}">ดูสัญญา</button></td>
+        <td style="white-space:nowrap"><button class="btn ghost small" data-id="${esc(r.docNo)}">ดูสัญญา</button>
+          <button class="btn ghost small" data-editrec="${esc(r.docNo)}">แก้ไข</button></td>
       </tr>`).join("") : `<tr><td colspan="9" class="empty">ยังไม่มีผู้ลงนาม</td></tr>`;
   }
   ["q", "fProject", "fType"].forEach((id) => $(id).addEventListener("input", draw));
   function setData(list) {
+    setTimeout(() => window.refreshBulk && window.refreshBulk(), 0);
     all = list.sort((a, b) => (b.signedAt || "").localeCompare(a.signedAt || ""));
     fillFilters(); draw();
   }
@@ -213,6 +248,69 @@
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
     a.download = `NDA_signatures_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  };
+
+  /* ---------- แก้ไขข้อมูลผู้ลงนาม ---------- */
+  const EDITABLE = ["nickname", "staffType", "role", "project", "phone", "email", "bankName", "bankAcc", "bankAccName"];
+  async function updateRecord(docNo, patch) {
+    patch = Object.assign({}, patch, { editedAt: new Date().toISOString() });
+    if (db) return db.collection(COLLECTION).doc(docNo).update(patch);
+    const list = JSON.parse(localStorage.getItem("nda_demo") || "[]");
+    list.forEach((x) => { if (x.docNo === docNo) Object.assign(x, patch); });
+    localStorage.setItem("nda_demo", JSON.stringify(list)); setData(list);
+  }
+  let editingRec = null;
+  const opts = (arr, cur) => [...new Set([...arr, cur].filter(Boolean))].map((v) => `<option ${v === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
+  $("rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-editrec]"); if (!b) return;
+    const r = all.find((x) => x.docNo === b.dataset.editrec); if (!r) return;
+    editingRec = r;
+    $("eName").textContent = [r.prefix, r.fullName].filter(Boolean).join(" ");
+    $("eNick").value = r.nickname || ""; $("eRole").value = r.role || ""; $("eProject").value = r.project || "";
+    $("ePhone").value = r.phone || ""; $("eEmail").value = r.email || "";
+    $("eAcc").value = r.bankAcc || ""; $("eAccName").value = r.bankAccName || "";
+    $("eType").innerHTML = opts(NDA_SETTINGS.staffTypes, r.staffType);
+    $("eBank").innerHTML = '<option value="">ไม่ระบุ</option>' + opts(NDA_SETTINGS.banks, r.bankName);
+    $("eErr").textContent = ""; $("editor").classList.add("open");
+  });
+  $("eCancel").onclick = () => $("editor").classList.remove("open");
+  $("eAcc").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 15); });
+  $("eSave").onclick = async () => {
+    const v = { nickname: $("eNick").value.trim(), staffType: $("eType").value, role: $("eRole").value.trim(),
+      project: $("eProject").value.trim(), phone: $("ePhone").value.trim(), email: $("eEmail").value.trim(),
+      bankName: $("eBank").value, bankAcc: $("eAcc").value.trim(), bankAccName: $("eAccName").value.trim() };
+    if (v.bankAcc && (v.bankAcc.length < 10)) return ($("eErr").textContent = "เลขบัญชีต้องมี 10–15 หลัก");
+    const patch = {}; EDITABLE.forEach((k) => { if ((editingRec[k] || "") !== v[k]) patch[k] = v[k]; });
+    if (!Object.keys(patch).length) return $("editor").classList.remove("open");
+    $("eSave").disabled = true;
+    try { await updateRecord(editingRec.docNo, patch); $("editor").classList.remove("open"); }
+    catch (e) { console.error(e); $("eErr").textContent = "บันทึกไม่สำเร็จ ตรวจสอบ Firestore Rules ว่าเป็นชุดล่าสุด"; }
+    $("eSave").disabled = false;
+  };
+
+  // เปลี่ยนชื่องานทีเดียวหลายคน: เลือกงานในตัวกรองก่อน
+  window.refreshBulk = refreshBulk;
+  function refreshBulk() {
+    const p = $("fProject").value;
+    $("bulkBar").hidden = !p; $("bulkMsg").textContent = "";
+    if (p) $("bulkLabel").textContent = `งาน "${p}" ${filtered().length} คน เปลี่ยนเป็น`;
+    $("projList").innerHTML = [...new Set(all.map((r) => r.project).filter(Boolean))].sort().map((v) => `<option value="${esc(v)}">`).join("");
+  }
+  ["fProject", "q", "fType"].forEach((id) => $(id).addEventListener("input", refreshBulk));
+  $("bulkBtn").onclick = async () => {
+    const to = $("bulkName").value.trim(), list = filtered();
+    if (!to) return ($("bulkMsg").textContent = "ใส่ชื่องานใหม่");
+    if (!confirm(`เปลี่ยนชื่องานของ ${list.length} คนเป็น "${to}"?`)) return;
+    $("bulkBtn").disabled = true;
+    try {
+      if (db) {
+        const batch = db.batch(), now = new Date().toISOString();
+        list.forEach((r) => batch.update(db.collection(COLLECTION).doc(r.docNo), { project: to, editedAt: now }));
+        await batch.commit();
+      } else { for (const r of list) await updateRecord(r.docNo, { project: to }); }
+      $("fProject").value = ""; $("bulkName").value = ""; draw(); refreshBulk();
+    } catch (e) { console.error(e); $("bulkMsg").textContent = "เปลี่ยนไม่สำเร็จ"; }
+    $("bulkBtn").disabled = false;
   };
 
   /* ---------- แท็บ ---------- */
